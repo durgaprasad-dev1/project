@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { login } from '../services/apiService';
+import { login, resumeUserMonitors } from '../services/apiService';
 import '../styles/auth.css';
 
 function Login() {
@@ -29,6 +29,11 @@ function Login() {
       // Store token and user info
       localStorage.setItem('token', result.token);
       localStorage.setItem('user', JSON.stringify(result.user));
+
+      // Resume monitoring for this user
+      resumeUserMonitors(result.user._id).catch((err) => {
+        console.warn('Could not resume user monitors:', err?.message || err);
+      });
 
       // Navigate to dashboard
       navigate('/dashboard');

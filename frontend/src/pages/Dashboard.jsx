@@ -30,11 +30,19 @@ function Dashboard() {
     }
 
     setUser(JSON.parse(userInfo));
-    fetchData();
+    fetchData(true);
+
+    const refreshInterval = setInterval(() => {
+      fetchData(false);
+    }, 15000);
+
+    return () => clearInterval(refreshInterval);
   }, [navigate]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+    }
 
     // Fetch websites
     const websitesResult = await getWebsites();
@@ -50,7 +58,9 @@ function Dashboard() {
       setStats(statsResult.data);
     }
 
-    setLoading(false);
+    if (showLoading) {
+      setLoading(false);
+    }
   };
 
   

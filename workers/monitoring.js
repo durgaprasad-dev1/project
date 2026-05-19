@@ -1,5 +1,6 @@
 const { default: axios } = require("axios")
 const Registration_model = require('../database/registration');
+const Monitor_model = require('../database/monitor');
 const { sendMail } = require('./emailer');
 
 // Store intervalIds for each monitor (monitorId -> intervalId)
@@ -11,17 +12,17 @@ let monitor = async (monitorId, url, keyword, email) => {
     const data = res.data;
 
     if (data.includes(keyword)) {
-        console.log("key found")
+      console.log("key found")
       let emailstatus = await sendMail(email, keyword);
-        if(emailstatus){
-          stopMonitoring(monitorId);
-        }
+      if (emailstatus) {
+        await Monitor_model.findByIdAndUpdate(monitorId, { isActive: false });
+        console.log(`Monitor ${monitorId} marked inactive after notification`);
+        stopMonitoring(monitorId);
       }
-      else {
-        console.log("Results are not out yet")
-      }
+    } else {
+      console.log("Results are not out yet")
     }
- catch (err) {
+  } catch (err) {
     console.log("Error monitoring:", err.message);
   }
 }

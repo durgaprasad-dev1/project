@@ -83,6 +83,15 @@ export const addWebsite = async (websiteName, websiteURL, frequency, keyword, us
   }
 };
 
+export const resumeUserMonitors = async (userId) => {
+  try {
+    const response = await apiClient.post('/resumeusermonitors', { userId });
+    return response.data;
+  } catch (error) {
+    return error.response?.data || { success: false, message: 'Failed to resume monitors' };
+  }
+};
+
 export const updateWebsite = async (id, status) => {
   try {
     const response = await apiClient.put(`/updatemonitor`, {

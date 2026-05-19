@@ -102,6 +102,25 @@ exports.updateMonitor = async (req, res) => {
   }
 };
 
+exports.resumeUserMonitors = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).send({ success: false, message: 'userId is required' });
+    }
+
+    const activeMonitors = await Monitor_model.find({ userId, isActive: true });
+    activeMonitors.forEach(monitor => {
+      startMonitoring(monitor._id.toString(), monitor.userId.toString(), monitor.url, monitor.keyword);
+    });
+
+    res.send({ success: true, message: 'user monitors resumed', started: activeMonitors.length });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ success: false, message: 'error resuming monitors' });
+  }
+};
+
 exports.getDashboard = async (req, res) => {
   try {
     const { userId } = req.query;
