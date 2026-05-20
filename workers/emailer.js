@@ -5,13 +5,13 @@ try{
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user:"pv0971712@gmail.com",
-      pass: "ailr ncex yzoh yqnq"
+      user:process.env.EMAIL_USER ,
+      pass: process.env.EMAIL_PASS
     }
   });
 
   const mailOptions = {
-    from: "pv0971712@gmail.com",
+    from: process.env.EMAIL_USER ,
     to: email,
     subject: "Hello",
     text: ` Keyword found: ${keyword}`
