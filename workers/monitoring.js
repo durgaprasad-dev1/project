@@ -15,9 +15,32 @@ let monitor = async (monitorId, url, keyword, email) => {
       console.log("key found")
       let emailstatus = await sendMail(email, keyword);
       if (emailstatus) {
-        await Monitor_model.findByIdAndUpdate(monitorId, { isActive: false });
+        const notificationRecord = {
+          sentAt: new Date(),
+          message: `Keyword found: ${keyword}`,
+          keyword,
+          url,
+          emailTo: email,
+          emailSubject: `Keyword found: ${keyword}`
+        };
+
+        const monitor = await Monitor_model.findByIdAndUpdate(monitorId, {
+          isActive: false,
+          $push: { notifications: notificationRecord }
+        }, { new: true });
         console.log(`Monitor ${monitorId} marked inactive after notification`);
         stopMonitoring(monitorId);
+        
+        // Log activity for notification
+        const Activity_model = require('../database/activity');
+        await Activity_model.create({
+          userId: monitor.userId,
+          monitorId: monitorId,
+          websiteName: monitor.name,
+          action: 'notification_sent',
+          description: `Notification sent for: ${monitor.name} - Found keyword: ${keyword}`,
+          details: { keyword, url, message: notificationRecord.message, emailTo: email }
+        });
       }
     } else {
       console.log("Results are not out yet")

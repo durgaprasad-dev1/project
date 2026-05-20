@@ -1,4 +1,5 @@
 const Monitor_model = require('../database/monitor');
+const Activity_model = require('../database/activity');
 
 const { startMonitoring, stopMonitoring } = require('../workers/monitoring')
 
@@ -27,6 +28,17 @@ exports.addMonitor = async (req, res) => {
     });
 
     await newMonitor.save();
+    
+    // Log activity
+    await Activity_model.create({
+      userId,
+      monitorId: newMonitor._id,
+      websiteName,
+      action: 'added',
+      description: `Added website: ${websiteName}`,
+      details: { url: websiteURL, keyword, frequency }
+    });
+    
     // Pass monitorId as first parameter
     startMonitoring(newMonitor._id.toString(), userId, websiteURL, keyword);
     res.send({ success: true, message: 'monitor added' });
@@ -58,8 +70,20 @@ exports.deleteMonitor = async (req, res) => {
       return res.status(400).send({ success: false, message: 'monitorId is required' });
     }
 
+    const monitor = await Monitor_model.findById(id);
+    
     // Stop monitoring before deleting
     stopMonitoring(id);
+    
+    // Log activity
+    await Activity_model.create({
+      userId: monitor.userId,
+      monitorId: id,
+      websiteName: monitor.name,
+      action: 'deleted',
+      description: `Deleted website: ${monitor.name}`,
+      details: { url: monitor.url }
+    });
     
     await Monitor_model.deleteOne({ _id: id });
     res.send({ success: true, message: 'monitor deleted' });
@@ -88,9 +112,27 @@ exports.updateMonitor = async (req, res) => {
       if (status) {
         // Resume monitoring
         startMonitoring(id, monitor.userId.toString(), monitor.url, monitor.keyword);
+        // Log activity
+        await Activity_model.create({
+          userId: monitor.userId,
+          monitorId: id,
+          websiteName: monitor.name,
+          action: 'activated',
+          description: `Started monitoring: ${monitor.name}`,
+          details: { url: monitor.url }
+        });
       } else {
         // Stop monitoring
         stopMonitoring(id);
+        // Log activity
+        await Activity_model.create({
+          userId: monitor.userId,
+          monitorId: id,
+          websiteName: monitor.name,
+          action: 'deactivated',
+          description: `Stopped monitoring: ${monitor.name}`,
+          details: { url: monitor.url }
+        });
       }
     }
 
@@ -129,18 +171,37 @@ exports.getDashboard = async (req, res) => {
     }
 
     const data = await Monitor_model.find({ userId });
+    const totalNotifications = data.reduce((count, monitor) => {
+      return count + (Array.isArray(monitor.notifications) ? monitor.notifications.length : 0);
+    }, 0);
+
     res.send({
       success: true,
       data: {
         totalWebsites: data.length,
         activeWebsites: data.filter(m => m.isActive).length,
         inactiveWebsites: data.filter(m => !m.isActive).length,
-        Notifications: 0
+        notifications: totalNotifications
       }
     });
   } catch (err) {
     console.log(err);
     res.status(500).send({ success: false, message: 'error fetching dashboard data' });
+  }
+};
+
+exports.getActivities = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) {
+      return res.status(400).send({ success: false, message: 'userId is required' });
+    }
+
+    const activities = await Activity_model.find({ userId }).sort({ createdAt: -1 }).limit(20);
+    res.send({ success: true, data: activities });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ success: false, message: 'error fetching activities' });
   }
 };
 

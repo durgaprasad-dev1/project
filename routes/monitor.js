@@ -6,6 +6,7 @@ const {
   deleteMonitor,
   updateMonitor,
   resumeUserMonitors,
+  getActivities,
   getUserDetails
 } = require('../controllers/monitorController');
 
@@ -18,6 +19,7 @@ router.get('/websites/stats/dashboard', getDashboard);
 router.delete('/deletemonitor', deleteMonitor);
 router.put('/updatemonitor', updateMonitor);
 router.post('/resumeusermonitors', resumeUserMonitors);
+router.get('/activities', getActivities);
 router.get('/user/details', getUserDetails);
 
 module.exports = router;
